@@ -9,11 +9,8 @@ import xgboost as xgb
 import io
 
 # PDF generation
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
-from reportlab.lib.enums import TA_CENTER
+# PDF generation
+from fpdf import FPDF
 
 # Add root to sys.path for utils import
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -180,36 +177,42 @@ def compute_model_confidence(pred, model_label):
 
 
 def generate_pdf_report(prediction, ci_low, ci_high, data, prop_type, subtype, state_label, similar_count):
-    buf = io.BytesIO()
-    styles = getSampleStyleSheet()
+    class PDF(FPDF):
+        def header(self):
+            # Title
+            self.set_font("DejaVu", "B", 16)
+            self.cell(0, 10, "ImmoEliza Property Valuation Report", align="C", new_x="LMARGIN", new_y="NEXT")
+            self.ln(5)
+            
+            # Subtitle
+            self.set_font("DejaVu", "", 12)
+            self.cell(0, 10, "AI Real Estate Valuator for Belgian Properties", align="C", new_x="LMARGIN", new_y="NEXT")
+            self.ln(10)
 
-    title_style = ParagraphStyle(
-        "TitleCentered",
-        parent=styles["Title"],
-        alignment=TA_CENTER
-    )
+    pdf = PDF()
+    
+    # Load Unicode font
+    font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSans.ttf")
+    pdf.add_font("DejaVu", "", font_path, uni=True)
+    pdf.add_font("DejaVu", "B", font_path, uni=True)
+    
+    pdf.add_page()
+    
+    # 1. Estimated Value Section
+    pdf.set_font("DejaVu", "B", 14)
+    pdf.cell(0, 10, f"Estimated Value: € {prediction:,.0f}", new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_font("DejaVu", "", 12)
+    pdf.cell(0, 8, f"Confidence Range: € {ci_low:,.0f} - € {ci_high:,.0f}", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 8, f"Based on {similar_count:,} similar properties.", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(10)
 
-    doc = SimpleDocTemplate(
-        buf, pagesize=A4,
-        rightMargin=2*cm, leftMargin=2*cm,
-        topMargin=2*cm, bottomMargin=2*cm
-    )
-
-    elems = []
-
-    elems.append(Paragraph("ImmoEliza Property Valuation Report", title_style))
-    elems.append(Spacer(1, 12))
-    elems.append(Paragraph("AI Real Estate Valuator for Belgian Properties", styles["Normal"]))
-    elems.append(Spacer(1, 20))
-
-    elems.append(Paragraph(f"<b>Estimated Value:</b> € {prediction:,.0f}", styles["Heading2"]))
-    elems.append(Paragraph(f"<b>Confidence Range:</b> € {ci_low:,.0f} - € {ci_high:,.0f}", styles["Normal"]))
-    elems.append(Paragraph(f"Based on <b>{similar_count:,}</b> similar properties.", styles["Normal"]))
-    elems.append(Spacer(1, 20))
-
-    elems.append(Paragraph("Property Summary", styles["Heading2"]))
-    elems.append(Spacer(1, 10))
-
+    # 2. Property Summary
+    pdf.set_font("DejaVu", "B", 14)
+    pdf.cell(0, 10, "Property Summary", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(2)
+    
+    pdf.set_font("DejaVu", "", 12)
     summary_lines = [
         f"Type: {prop_type} ({subtype})",
         f"Postal Code: {data['postal_code']}",
@@ -223,13 +226,17 @@ def generate_pdf_report(prediction, ci_low, ci_high, data, prop_type, subtype, s
         f"Building State: {state_label}",
         f"Energy Consumption: {data['primary_energy_consumption']} kWh/m²"
     ]
+    
     for line in summary_lines:
-        elems.append(Paragraph(line, styles["Normal"]))
-    elems.append(Spacer(1, 20))
+        pdf.cell(0, 7, line, new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(10)
 
-    elems.append(Paragraph("Amenities", styles["Heading2"]))
-    elems.append(Spacer(1, 10))
-
+    # 3. Amenities
+    pdf.set_font("DejaVu", "B", 14)
+    pdf.cell(0, 10, "Amenities", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(2)
+    
+    pdf.set_font("DejaVu", "", 12)
     amenity_lines = [
         f"Garage: {'Yes' if data['has_garage'] else 'No'}",
         f"Garden: {'Yes' if data['has_garden'] else 'No'}",
@@ -237,13 +244,17 @@ def generate_pdf_report(prediction, ci_low, ci_high, data, prop_type, subtype, s
         f"Equipped Kitchen: {'Yes' if data['has_equipped_kitchen'] else 'No'}",
         f"Swimming Pool: {'Yes' if data['has_swimming_pool'] else 'No'}"
     ]
+    
     for line in amenity_lines:
-        elems.append(Paragraph(line, styles["Normal"]))
-    elems.append(Spacer(1, 20))
+        pdf.cell(0, 7, line, new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(10)
 
-    elems.append(Paragraph("Location Insights", styles["Heading2"]))
-    elems.append(Spacer(1, 10))
-
+    # 4. Location Insights
+    pdf.set_font("DejaVu", "B", 14)
+    pdf.cell(0, 10, "Location Insights", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(2)
+    
+    pdf.set_font("DejaVu", "", 12)
     loc_lines = [
         f"Province: {data['province']}",
         f"Region: {data['region']}",
@@ -252,15 +263,17 @@ def generate_pdf_report(prediction, ci_low, ci_high, data, prop_type, subtype, s
         f"Region Benchmark: € {data['region_benchmark_m2']:,.0f}/m²",
         f"National Benchmark: € {data['national_benchmark_m2']:,.0f}/m²"
     ]
+    
     for line in loc_lines:
-        elems.append(Paragraph(line, styles["Normal"]))
+        pdf.cell(0, 7, line, new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.ln(15)
+    
+    # Disclaimer
+    pdf.set_font("DejaVu", "", 10)
+    pdf.multi_cell(0, 5, "Disclaimer: Estimate may vary depending on market conditions.")
 
-    elems.append(Spacer(1, 20))
-    elems.append(Paragraph("<b>Disclaimer:</b> Estimate may vary depending on market conditions.", styles["Normal"]))
-
-    doc.build(elems)
-    buf.seek(0)
-    return buf
+    return bytes(pdf.output(dest="S"))
 
 # =========================================================
 # SIDEBAR
