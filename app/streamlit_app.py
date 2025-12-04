@@ -5,7 +5,15 @@ import joblib
 import os
 import sys
 import altair as alt
+import xgboost as xgb
+import io
+
+# PDF generation
+# PDF generation
 from fpdf import FPDF
+
+# Add root to sys.path for utils import
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 try:
@@ -100,48 +108,57 @@ def get_metadata(pc, df):
     nearest = df.index[np.abs(df.index - pc).argmin()]
     return df.loc[nearest].to_dict()
 
-def compute_model_confidence(pred, model_type):
-    err = 0.167 if model_type.lower() == "house" else 0.09
-    return pred*(1-err), pred*(1+err)
+def get_metadata(pc, lookup_df):
+    if pc in lookup_df.index:
+        return lookup_df.loc[pc].to_dict()
+    all_pcs = lookup_df.index.values
+    nearest = all_pcs[np.abs(all_pcs - pc).argmin()]
+    return lookup_df.loc[nearest].to_dict()
 
-# =========================================================
-# UNICODE-PDF (FPDF2 + DejaVu)
-# =========================================================
-def generate_pdf_report(pred, ci_low, ci_high, data, prop_type, subtype, state_label, similar_count):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=12)
 
-    # Load DejaVu for Unicode (€ included)
+def compute_model_confidence(pred, model_label):
+    err = 0.167 if model_label.lower().startswith("house") else 0.09
+    return pred * (1 - err), pred * (1 + err)
+
+
+def generate_pdf_report(prediction, ci_low, ci_high, data, prop_type, subtype, state_label, similar_count):
+    class PDF(FPDF):
+        def header(self):
+            # Title
+            self.set_font("DejaVu", "B", 16)
+            self.cell(0, 10, "ImmoEliza Property Valuation Report", align="C", new_x="LMARGIN", new_y="NEXT")
+            self.ln(5)
+            
+            # Subtitle
+            self.set_font("DejaVu", "", 12)
+            self.cell(0, 10, "AI Real Estate Valuator for Belgian Properties", align="C", new_x="LMARGIN", new_y="NEXT")
+            self.ln(10)
+
+    pdf = PDF()
+    
+    # Load Unicode font
     font_path = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSans.ttf")
     pdf.add_font("DejaVu", "", font_path, uni=True)
     pdf.add_font("DejaVu", "B", font_path, uni=True)
-    pdf.set_font("DejaVu", "", 12)
-
-    # Header
-    pdf.set_font("DejaVu", "B", 18)
-    pdf.cell(0, 12, "ImmoEliza Valuation Report", ln=True, align="C")
-    pdf.ln(4)
-
-    pdf.set_font("DejaVu", "", 12)
-    pdf.multi_cell(0, 7, "AI Valuation based on Belgian real estate transactions.")
-    pdf.ln(4)
-
-    # Main price
-    pdf.set_font("DejaVu", "B", 16)
-    pdf.cell(0, 10, f"Estimated Value: € {pred:,.0f}", ln=True)
-
-    pdf.set_font("DejaVu", "", 12)
-    pdf.cell(0, 8, f"Confidence Range: € {ci_low:,.0f} – € {ci_high:,.0f}", ln=True)
-    pdf.cell(0, 8, f"Comparable Properties: {similar_count:,}", ln=True)
-
-    # Summary
-    pdf.ln(8)
+    
+    pdf.add_page()
+    
+    # 1. Estimated Value Section
     pdf.set_font("DejaVu", "B", 14)
-    pdf.cell(0, 10, "Property Summary", ln=True)
+    pdf.cell(0, 10, f"Estimated Value: € {prediction:,.0f}", new_x="LMARGIN", new_y="NEXT")
+    
     pdf.set_font("DejaVu", "", 12)
+    pdf.cell(0, 8, f"Confidence Range: € {ci_low:,.0f} - € {ci_high:,.0f}", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 8, f"Based on {similar_count:,} similar properties.", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(10)
 
-    summary = [
+    # 2. Property Summary
+    pdf.set_font("DejaVu", "B", 14)
+    pdf.cell(0, 10, "Property Summary", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(2)
+    
+    pdf.set_font("DejaVu", "", 12)
+    summary_lines = [
         f"Type: {prop_type} ({subtype})",
         f"Postal Code: {data['postal_code']}",
         f"Locality: {data['locality']}",
@@ -154,32 +171,36 @@ def generate_pdf_report(pred, ci_low, ci_high, data, prop_type, subtype, state_l
         f"Building State: {state_label}",
         f"Energy Consumption: {data['primary_energy_consumption']} kWh/m²",
     ]
-    for line in summary:
-        pdf.cell(0, 7, line, ln=True)
+    
+    for line in summary_lines:
+        pdf.cell(0, 7, line, new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(10)
 
-    # Amenities
-    pdf.ln(8)
+    # 3. Amenities
     pdf.set_font("DejaVu", "B", 14)
-    pdf.cell(0, 10, "Amenities", ln=True)
+    pdf.cell(0, 10, "Amenities", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(2)
+    
     pdf.set_font("DejaVu", "", 12)
-
-    amenities = [
+    amenity_lines = [
         f"Garage: {'Yes' if data['has_garage'] else 'No'}",
         f"Garden: {'Yes' if data['has_garden'] else 'No'}",
         f"Terrace: {'Yes' if data['has_terrace'] else 'No'}",
         f"Equipped Kitchen: {'Yes' if data['has_equipped_kitchen'] else 'No'}",
         f"Swimming Pool: {'Yes' if data['has_swimming_pool'] else 'No'}",
     ]
-    for line in amenities:
-        pdf.cell(0, 7, line, ln=True)
+    
+    for line in amenity_lines:
+        pdf.cell(0, 7, line, new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(10)
 
-    # Location
-    pdf.ln(8)
+    # 4. Location Insights
     pdf.set_font("DejaVu", "B", 14)
-    pdf.cell(0, 10, "Location Insights", ln=True)
+    pdf.cell(0, 10, "Location Insights", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(2)
+    
     pdf.set_font("DejaVu", "", 12)
-
-    loc = [
+    loc_lines = [
         f"Province: {data['province']}",
         f"Region: {data['region']}",
         f"Median Income: € {data['median_income']:,.0f}",
@@ -187,18 +208,17 @@ def generate_pdf_report(pred, ci_low, ci_high, data, prop_type, subtype, state_l
         f"Region Benchmark: € {data['region_benchmark_m2']:,.0f} €/m²",
         f"National Benchmark: € {data['national_benchmark_m2']:,.0f} €/m²",
     ]
-    for line in loc:
-        pdf.cell(0, 7, line, ln=True)
-
+    
+    for line in loc_lines:
+        pdf.cell(0, 7, line, new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.ln(15)
+    
     # Disclaimer
-    pdf.ln(10)
     pdf.set_font("DejaVu", "", 10)
-    pdf.multi_cell(0, 6,
-        "Disclaimer: Estimate based on similar properties in your area. "
-        "Actual market value may vary."
-    )
+    pdf.multi_cell(0, 5, "Disclaimer: Estimate may vary depending on market conditions.")
 
-    return pdf.output(dest="S").encode("latin1")
+    return bytes(pdf.output(dest="S"))
 
 # =========================================================
 # SIDEBAR
