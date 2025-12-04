@@ -200,22 +200,38 @@ def create_download_link(html_content, filename="valuation_report.html"):
 # =========================================================
 # SIDEBAR
 # =========================================================
+# ----- CUSTOM SIDEBAR STYLE -----
+sidebar_css = """
+<style>
+[data-testid="stSidebar"] > div:first-child {
+    background-color: #e6f0fa; /* soft blue */
+    padding: 20px;
+    border-radius: 0px 10px 10px 0px; /* optional rounded edges */
+}
 
+[data-testid="stSidebar"] h1, 
+[data-testid="stSidebar"] h2, 
+[data-testid="stSidebar"] h3, 
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] li {
+    color: #003366 !important; /* dark blue text for readability */
+}
+
+[data-testid="stSidebar"] .stMarkdown {
+    font-size: 15px !important;
+    line-height: 1.5;
+}
+</style>
+"""
+
+st.markdown(sidebar_css, unsafe_allow_html=True)
 with st.sidebar:
-    # Logo (House + Upward Arrow SVG)
-    # st.markdown("""
-    # <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#2c5282" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    #     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-    #     <polyline points="9 22 9 12 15 12 15 22"></polyline>
-    #     <line x1="12" y1="16" x2="12" y2="10"></line>
-    #     <polyline points="9 13 12 10 15 13"></polyline>
-    # </svg>
-    # """, unsafe_allow_html=True)
-    "🏠"
+    st.image(
+        "https://raw.githubusercontent.com/AmineSam/immo-eliza-deployment-Amine/main/images/%E2%80%94Pngtree%E2%80%94financial%20investment%20real%20estate%20house_7128805.png",
+        width=120
+    )
     st.title("ImmoEliza")
-    st.markdown("### AI Real Estate Valuator")
-    
-    st.markdown("## About this Tool")
+
     st.markdown("""
     This valuation tool analyzes thousands of real estate transactions in Belgium to estimate property prices.
     
@@ -241,23 +257,31 @@ with st.form("valuation_form"):
     
     col1_1, col1_2 = st.columns(2)
     
+    # SECTION 1: Property Details
+    st.markdown('<div class="section-header"><span class="section-icon">▸</span> Property Details</div>', unsafe_allow_html=True)
+
+    col1_1, col1_2 = st.columns(2)
+
     with col1_1:
         prop_type = st.selectbox("Property Type", ["House", "Apartment"], index=None, placeholder="Select type...")
-        
-        # Subtype Logic
+
         HOUSE_SUBTYPES = ["residence", "villa", "mixed building", "master house", "cottage", "bungalow", "chalet", "mansion"]
         APARTMENT_SUBTYPES = ["apartment", "ground floor", "penthouse", "duplex", "studio", "loft", "triplex", "student flat", "student housing"]
-        
-        subtypes_list = []
-        if prop_type == "House":
-            subtypes_list = HOUSE_SUBTYPES
-        elif prop_type == "Apartment":
-            subtypes_list = APARTMENT_SUBTYPES
-            
-        subtypes_ui = [s.title() for s in subtypes_list]
-        subtype_ui = st.selectbox("Property Subtype", subtypes_ui, index=None, placeholder="Select subtype...")
-        prop_subtype = subtype_ui.lower() if subtype_ui else None
-        
+
+        if prop_type:
+            if prop_type == "House":
+                subtypes_list = HOUSE_SUBTYPES
+            else:
+                subtypes_list = APARTMENT_SUBTYPES
+
+            subtypes_ui = [s.title() for s in subtypes_list]
+            subtype_ui = st.selectbox("Property Subtype", subtypes_ui, index=None, placeholder="Select subtype...")
+            prop_subtype = subtype_ui.lower() if subtype_ui else None
+
+        else:
+            st.selectbox("Property Subtype", [], disabled=True, placeholder="Select subtype...")
+            prop_subtype = None
+
         all_postal_codes = sorted(lookup_df.index.unique().tolist())
         postal_code = st.selectbox("Postal Code", all_postal_codes, index=None, placeholder="Select postal code...")
 
