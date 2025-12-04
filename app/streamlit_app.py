@@ -32,8 +32,155 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# UI CSS
-st.markdown("""
+# Initialize theme in session state
+if 'theme' not in st.session_state:
+    st.session_state['theme'] = 'light'
+
+# Theme-specific CSS
+def get_theme_css(theme):
+    if theme == 'dark':
+        return """
+<style>
+    .stApp {
+        background-color: #1a1a2e;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        color: #e0e0e0;
+    }
+    h1, h2, h3 {
+        color: #f0f0f0;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+    h1 { font-size: 2.5rem; }
+    
+    .section-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #e0e0e0;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid #3a3a52;
+        padding-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+    .section-icon { color: #60a5fa; margin-right: 0.5rem; }
+
+    .result-card {
+        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+        border-radius: 16px;
+        padding: 2.5rem;
+        text-align: center;
+        margin: 2rem auto;
+        max-width: 600px;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4),
+                    0 4px 6px -2px rgba(0,0,0,0.2);
+        border: 1px solid #4a5568;
+    }
+    .result-title {
+        color: #60a5fa;
+        font-size: 1.2rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 1rem;
+    }
+    .result-price {
+        color: #93c5fd;
+        font-size: 4rem;
+        font-weight: 800;
+        margin: 0.5rem 0;
+        line-height: 1.2;
+    }
+    .result-subline {
+        color: #cbd5e0;
+        font-size: 0.95rem;
+        margin-top: 0.5rem;
+    }
+    .result-disclaimer {
+        color: #a0aec0;
+        font-size: 0.85rem;
+        font-style: italic;
+        margin-top: 1.5rem;
+    }
+    
+    .stButton>button {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: #ffffff;
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 1rem 3rem;
+        border: none;
+        font-size: 1.2rem;
+        box-shadow: 0 4px 6px rgba(59,130,246,0.3);
+    }
+    .stButton>button:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 8px rgba(59,130,246,0.4);
+    }
+    
+    .sidebar-box {
+        background-color: #2d3748;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #4a5568;
+    }
+    
+    /* Streamlit specific dark mode overrides */
+    .stSelectbox label, .stNumberInput label, .stSlider label {
+        color: #e0e0e0 !important;
+    }
+    
+    .stMarkdown {
+        color: #e0e0e0;
+    }
+    
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {
+        background-color: #16213e;
+    }
+    
+    [data-testid="stSidebar"] .stMarkdown {
+        color: #e0e0e0;
+    }
+    
+    /* Metric styling */
+    [data-testid="stMetricValue"] {
+        color: #60a5fa;
+    }
+    
+    [data-testid="stMetricLabel"] {
+        color: #cbd5e0;
+    }
+    
+    /* Expander styling */
+    .streamlit-expanderHeader {
+        background-color: #2d3748;
+        color: #e0e0e0;
+    }
+    
+    /* Download button */
+    .stDownloadButton>button {
+        background-color: #10b981;
+        color: #ffffff;
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 0.75rem 2rem;
+        border: none;
+        box-shadow: 0 4px 6px rgba(16,185,129,0.3);
+    }
+    
+    .stDownloadButton>button:hover {
+        background-color: #059669;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 8px rgba(16,185,129,0.4);
+    }
+</style>
+"""
+    else:  # light theme
+        return """
 <style>
     .stApp {
         background-color: #ffffff;
@@ -45,6 +192,7 @@ st.markdown("""
         letter-spacing: -0.5px;
     }
     h1 { font-size: 2.5rem; }
+    
     .section-header {
         font-size: 1.1rem;
         font-weight: 600;
@@ -95,6 +243,7 @@ st.markdown("""
         font-style: italic;
         margin-top: 1.5rem;
     }
+    
     .stButton>button {
         background-color: #3182ce;
         color: #ffffff;
@@ -110,14 +259,35 @@ st.markdown("""
         transform: translateY(-1px);
         box-shadow: 0 6px 8px rgba(50,130,206,0.3);
     }
+    
     .sidebar-box {
         background-color: #e6f0fa;
         padding: 20px;
         border-radius: 10px;
         margin-bottom: 20px;
     }
+    
+    /* Download button */
+    .stDownloadButton>button {
+        background-color: #10b981;
+        color: #ffffff;
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 0.75rem 2rem;
+        border: none;
+        box-shadow: 0 4px 6px rgba(16,185,129,0.2);
+    }
+    
+    .stDownloadButton>button:hover {
+        background-color: #059669;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 8px rgba(16,185,129,0.3);
+    }
 </style>
-""", unsafe_allow_html=True)
+"""
+
+# Apply theme CSS
+st.markdown(get_theme_css(st.session_state['theme']), unsafe_allow_html=True)
 
 # =========================================================
 # DATA & MODEL LOADING
@@ -285,6 +455,15 @@ with st.sidebar:
         width=120,
     )
     st.title("ImmoEliza")
+    
+    # Theme Toggle
+    st.markdown("---")
+    current_theme = st.session_state['theme']
+    theme_label = "🌙 Dark Mode" if current_theme == 'light' else "☀️ Light Mode"
+    
+    if st.button(theme_label, use_container_width=True):
+        st.session_state['theme'] = 'dark' if current_theme == 'light' else 'light'
+        st.rerun()
 
     st.markdown(
         """
