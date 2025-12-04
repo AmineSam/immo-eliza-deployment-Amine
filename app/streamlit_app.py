@@ -15,7 +15,6 @@ from fpdf import FPDF
 # Add root to sys.path for utils import
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 try:
     from utils.stage3_utils import transform_stage3
 except ImportError:
@@ -163,14 +162,6 @@ lookup_df, region_counts, model_house, model_apt, stage3_house, stage3_apt = loa
 # =========================================================
 # HELPERS
 # =========================================================
-
-def get_metadata(pc, lookup_df):
-    if pc in lookup_df.index:
-        return lookup_df.loc[pc].to_dict()
-    all_pcs = lookup_df.index.values
-    nearest = all_pcs[np.abs(all_pcs - pc).argmin()]
-    return lookup_df.loc[nearest].to_dict()
-
 
 def get_metadata(pc, lookup_df):
     if pc in lookup_df.index:
