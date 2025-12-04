@@ -455,15 +455,6 @@ with st.sidebar:
         width=120,
     )
     st.title("ImmoEliza")
-    
-    # Theme Toggle
-    st.markdown("---")
-    current_theme = st.session_state['theme']
-    theme_label = "🌙 Dark Mode" if current_theme == 'light' else "☀️ Light Mode"
-    
-    if st.button(theme_label, use_container_width=True):
-        st.session_state['theme'] = 'dark' if current_theme == 'light' else 'light'
-        st.rerun()
 
     st.markdown(
         """
@@ -485,7 +476,25 @@ with st.sidebar:
 # MAIN CONTENT
 # =========================================================
 
-st.title("Belgian Property Valuation Tool")
+# Title with theme toggle
+title_col, toggle_col = st.columns([4, 1])
+
+with title_col:
+    st.title("Belgian Property Valuation Tool")
+
+with toggle_col:
+    st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+    current_theme = st.session_state['theme']
+    is_dark = current_theme == 'dark'
+    
+    if st.toggle("🌙 Dark Mode" if not is_dark else "☀️ Light Mode", value=is_dark, key="theme_toggle"):
+        if current_theme == 'light':
+            st.session_state['theme'] = 'dark'
+            st.rerun()
+    else:
+        if current_theme == 'dark':
+            st.session_state['theme'] = 'light'
+            st.rerun()
 
 # ------------------------
 # SECTION 1: Property Details
