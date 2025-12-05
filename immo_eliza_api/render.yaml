@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: immo-eliza-api
+    env: docker
+    dockerfilePath: ./immo_eliza_api/Dockerfile
+    dockerContext: ./immo_eliza_api
+    plan: free
+    envVars:
+      - key: PYTHONHASHSEED
+        value: "0"
+      - key: PORT
+        value: "8000"
+    autoDeploy: true
+    healthCheckPath: /health
