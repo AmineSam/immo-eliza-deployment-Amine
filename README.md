@@ -1,150 +1,125 @@
-# 🏠 Immo-Eliza Real Estate Price Estimator
+# 🏠 Immo-Eliza FastAPI Backend
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://www.immo-eliza.be/)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-**Live Demo:** [https://www.immo-eliza.be/](https://www.immo-eliza.be/)
-
-A production-ready machine learning web application for estimating Belgian real estate prices. Built with Streamlit and powered by specialized XGBoost models trained separately for houses and apartments, this tool provides accurate price predictions with confidence intervals, location insights, and downloadable PDF reports.
-
----
+Production-ready REST API for Belgian real estate price prediction using specialized XGBoost models.
 
 ## 📋 Overview
 
-Immo-Eliza is a comprehensive property valuation tool designed specifically for the Belgian real estate market. The application leverages advanced machine learning techniques to provide accurate price estimates based on property characteristics, location data, and market benchmarks.
+This is a complete FastAPI backend that provides price predictions for Belgian properties (houses and apartments) via REST API endpoints. It uses the same ML logic as the Streamlit version, with 100% preservation of preprocessing, feature engineering, and model inference.
 
-The project features:
-- **Dual-model architecture**: Separate models optimized for houses and apartments
-- **Custom domain**: Deployed at [immo-eliza.be](https://www.immo-eliza.be/)
-- **Professional UI**: Clean, modern interface with light/dark mode support
-- **Detailed reporting**: Generate PDF reports with predictions and insights
-- **Market intelligence**: Price benchmarks and location-based analytics
+### Key Features
 
----
-
-## ✨ Features
-
-### 🎯 Core Functionality
-- **Specialized ML Models**: Two separate XGBoost models trained specifically for:
-  - Houses (villas, residences, mixed buildings, etc.)
-  - Apartments (studios, flats, penthouses, etc.)
-- **Accurate Predictions**: Price estimates with confidence intervals based on:
-  - Property type and subtype
-  - Location (postal code with automatic locality detection)
-  - Physical characteristics (area, rooms, bathrooms, facades)
-  - Building condition and year
-  - Amenities (garden, terrace, pool, parking)
-
-### 📊 Market Insights
-- **Price Benchmarks**: Compare estimated price per m² against:
-  - National averages
-  - Provincial averages
-  - Regional averages
-- **Location Intelligence**: Automatic metadata enrichment including:
-  - Province and region detection
-  - Local pricing trends
-
-### 📄 PDF Report Generation
-Generate professional PDF reports containing:
-- Estimated property price with confidence interval
-- All input property details
-- Model used (House or Apartment)
-- Price per m² analysis
-- Location and market context
-
-### 🎨 User Experience
-- **Light/Dark Mode Toggle**: Seamless theme switching for user preference
-- **Responsive Design**: Clean, modern interface optimized for all screen sizes
-- **Input Validation**: Real-time feedback and error handling
-- **Visual Analytics**: Interactive charts and visualizations
+- **Dual-model architecture**: Separate XGBoost models for houses and apartments
+- **REST API**: Clean JSON endpoints for integration
+- **Production-ready**: Docker containerization, health checks, logging
+- **Input validation**: Pydantic models with comprehensive validation
+- **CORS enabled**: Ready for frontend integration
+- **Render deployment**: One-click deployment configuration
 
 ---
 
-## 🛠️ Tech Stack
+## 🚀 API Endpoints
 
-### Machine Learning
-- **XGBoost**: Gradient boosting framework for regression models
-- **scikit-learn**: Data preprocessing and pipeline management
-- **NumPy & Pandas**: Data manipulation and numerical computing
+### `GET /health`
+Health check endpoint.
 
-### Web Application
-- **Streamlit**: Interactive web application framework
-- **Altair**: Declarative statistical visualization library
-- **FPDF2**: PDF generation with Unicode support
-
-### Data Processing
-- **Joblib**: Model serialization and loading
-- **Custom Pipelines**: Multi-stage preprocessing and feature engineering
-
-### Deployment
-- **Streamlit Cloud**: Hosting platform
-- **Custom Domain**: immo-eliza.be with DNS configuration
-
----
-
-## 📁 Project Structure
-
+**Response:**
+```json
+{
+  "status": "ok"
+}
 ```
-immo-eliza-deployment-Amine/
-│
-├── app/
-│   ├── streamlit_app.py          # Main Streamlit application
-│   └── fonts/
-│       └── DejaVuSans.ttf         # Unicode font for PDF generation
-│
-├── models/
-│   ├── model_xgb_house.pkl        # XGBoost model for houses
-│   ├── model_xgb_apartment.pkl    # XGBoost model for apartments
-│   ├── stage3_pipeline_house.pkl  # Preprocessing pipeline for houses
-│   └── stage3_pipeline_apartment.pkl  # Preprocessing pipeline for apartments
-│
-├── utils/
-│   ├── predictor.py               # Prediction logic
-│   ├── stage3_utils.py            # Feature engineering utilities
-│   ├── ml_utils.py                # Machine learning helpers
-│   ├── house_optimization_gpu.py  # House model training script
-│   └── apartment_optimization_gpu.py  # Apartment model training script
-│
-├── config/
-│   └── [Configuration files]
-│
-├── data/
-│   └── [Training and reference data]
-│
-├── pipelines/
-│   └── [Data preprocessing pipelines]
-│
-├── requirements.txt               # Python dependencies
-└── README.md                      # This file
+
+### `GET /model-info`
+Get information about loaded models and features.
+
+**Response:**
+```json
+{
+  "models": {
+    "house": {
+      "name": "XGBoost House Model",
+      "file": "model_xgb_house.pkl",
+      "mae_relative_error": 0.167,
+      "confidence_interval": "±16.7%"
+    },
+    "apartment": {
+      "name": "XGBoost Apartment Model",
+      "file": "model_xgb_apartment.pkl",
+      "mae_relative_error": 0.09,
+      "confidence_interval": "±9.0%"
+    }
+  },
+  "features": {
+    "count": 25,
+    "list": ["area", "postal_code_te_price", ...]
+  }
+}
+```
+
+### `POST /predict`
+Predict property price.
+
+**Request Body:**
+```json
+{
+  "property_type": "House",
+  "property_subtype": "villa",
+  "postal_code": 1000,
+  "area": 150,
+  "rooms": 3,
+  "bathrooms": 2,
+  "toilets": 2,
+  "primary_energy_consumption": 200,
+  "state": 2,
+  "build_year": 2000,
+  "facades_number": 2,
+  "has_garage": true,
+  "has_garden": true,
+  "has_terrace": false,
+  "has_equipped_kitchen": true,
+  "has_swimming_pool": false
+}
+```
+
+**Response:**
+```json
+{
+  "predicted_price": 450000.0,
+  "confidence_interval_low": 374850.0,
+  "confidence_interval_high": 525150.0,
+  "property_type": "House",
+  "postal_code": 1000,
+  "locality": "Brussels",
+  "province": "Brussels Hoofdstedelijk Gewest",
+  "region": "Brussels"
+}
 ```
 
 ---
 
-## 🚀 Installation & Usage
+## 🛠️ Local Development
 
 ### Prerequisites
-- Python 3.9 or higher
-- pip package manager
-- Virtual environment (recommended)
 
-### Local Setup
+- Python 3.11+
+- pip
 
-1. **Clone the repository**
+### Setup
+
+1. **Navigate to project directory**
    ```bash
-   git clone https://github.com/AmineSam/immo-eliza-deployment-Amine.git
-   cd immo-eliza-deployment-Amine
+   cd immo_eliza_api
    ```
 
-2. **Create and activate virtual environment**
+2. **Create virtual environment**
    ```bash
+   python -m venv venv
+   
    # Windows
-   python -m venv .venv
-   .venv\Scripts\activate
-
+   venv\Scripts\activate
+   
    # macOS/Linux
-   python3 -m venv .venv
-   source .venv/bin/activate
+   source venv/bin/activate
    ```
 
 3. **Install dependencies**
@@ -152,97 +127,353 @@ immo-eliza-deployment-Amine/
    pip install -r requirements.txt
    ```
 
-4. **Run the application**
+4. **Run the server**
    ```bash
-   streamlit run app/streamlit_app.py
+   uvicorn app.main:app --reload
    ```
 
-5. **Access the app**
-   - Open your browser and navigate to `http://localhost:8501`
-
-### Using the Application
-
-1. **Select Property Type**: Choose between House or Apartment
-2. **Choose Subtype**: Select specific property category (villa, penthouse, etc.)
-3. **Enter Location**: Provide postal code (locality auto-detected)
-4. **Specify Details**:
-   - Build year and condition
-   - Living area in m²
-   - Number of bedrooms, bathrooms, toilets, facades
-5. **Add Amenities**: Check available features (garden, terrace, pool, parking)
-6. **Get Estimate**: Click "Estimate Price" to generate prediction
-7. **Download Report**: Generate and download PDF report with full details
+5. **Access the API**
+   - API: `http://localhost:8000`
+   - Interactive docs: `http://localhost:8000/docs`
+   - ReDoc: `http://localhost:8000/redoc`
 
 ---
 
-## 🌐 Deployment Notes
+## 🐳 Docker Usage
 
-### Streamlit Cloud Deployment
+### Build Image
 
-The application is deployed on Streamlit Cloud with the following configuration:
+```bash
+cd immo_eliza_api
+docker build -t immo-eliza-api .
+```
 
-- **Main file**: `app/streamlit_app.py`
-- **Python version**: 3.9+
-- **Custom domain**: immo-eliza.be (configured via DNS CNAME)
+### Run Container
 
-### Domain Configuration
+```bash
+docker run -p 8000:8000 immo-eliza-api
+```
 
-1. **Domain purchased**: immo-eliza.be
-2. **DNS Setup**: CNAME record pointing to Streamlit Cloud
-3. **SSL/TLS**: Automatically managed by Cloudflare
-4. **Redirect**: [www.immo-eliza.be](https://www.immo-eliza.be/) → Streamlit app using Cloudflare
+### Access API
 
-### Environment Considerations
-
-- Models are loaded once at startup for performance
-- Session state manages theme preferences
-- PDF generation uses bundled DejaVuSans.ttf font for Unicode support
-- No external API dependencies for core functionality
+Open `http://localhost:8000/docs` in your browser.
 
 ---
 
+## ☁️ Render Deployment
 
-## 📊 Model Performance
+### Option 1: Using render.yaml (Recommended)
 
-The specialized models were trained on Belgian real estate data with the following characteristics:
+1. Push code to GitHub
+2. Go to [Render Dashboard](https://dashboard.render.com/)
+3. Click "New" → "Blueprint"
+4. Connect your repository
+5. Render will automatically detect `render.yaml` and deploy
 
-- **House Model**: Optimized for single-family homes, villas, and mixed buildings
-- **Apartment Model**: Optimized for apartments, studios, penthouses, and flats
-- **Training Approach**: GPU-accelerated hyperparameter tuning using Optuna
-- **Validation**: Cross-validation with confidence interval estimation
+### Option 2: Manual Setup
+
+1. Go to [Render Dashboard](https://dashboard.render.com/)
+2. Click "New" → "Web Service"
+3. Connect your repository
+4. Configure:
+   - **Name**: immo-eliza-api
+   - **Environment**: Docker
+   - **Dockerfile Path**: `./immo_eliza_api/Dockerfile`
+   - **Docker Context**: `./immo_eliza_api`
+5. Add environment variables:
+   - `PYTHONHASHSEED=0`
+   - `PORT=8000`
+6. Click "Create Web Service"
+
+### Post-Deployment
+
+- Your API will be available at: `https://your-app-name.onrender.com`
+- Health check: `https://your-app-name.onrender.com/health`
+- Docs: `https://your-app-name.onrender.com/docs`
+
+---
+
+## 📝 API Usage Examples
+
+### Using curl
+
+#### Health Check
+```bash
+curl http://localhost:8000/health
+```
+
+#### Model Info
+```bash
+curl http://localhost:8000/model-info
+```
+
+#### Predict Price
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "property_type": "House",
+    "property_subtype": "villa",
+    "postal_code": 1000,
+    "area": 150,
+    "rooms": 3,
+    "bathrooms": 2,
+    "toilets": 2,
+    "primary_energy_consumption": 200,
+    "state": 2,
+    "build_year": 2000,
+    "facades_number": 2,
+    "has_garage": true,
+    "has_garden": true,
+    "has_terrace": false,
+    "has_equipped_kitchen": true,
+    "has_swimming_pool": false
+  }'
+```
+
+### Using Python
+
+```python
+import requests
+
+# API base URL
+BASE_URL = "http://localhost:8000"
+
+# Health check
+response = requests.get(f"{BASE_URL}/health")
+print(response.json())
+
+# Get model info
+response = requests.get(f"{BASE_URL}/model-info")
+print(response.json())
+
+# Predict price
+payload = {
+    "property_type": "Apartment",
+    "property_subtype": "apartment",
+    "postal_code": 1050,
+    "area": 85,
+    "rooms": 2,
+    "bathrooms": 1,
+    "toilets": 1,
+    "primary_energy_consumption": 180,
+    "state": 2,
+    "build_year": 2010,
+    "facades_number": 1,
+    "has_garage": False,
+    "has_garden": False,
+    "has_terrace": True,
+    "has_equipped_kitchen": True,
+    "has_swimming_pool": False
+}
+
+response = requests.post(f"{BASE_URL}/predict", json=payload)
+result = response.json()
+
+print(f"Predicted Price: €{result['predicted_price']:,.0f}")
+print(f"Confidence Interval: €{result['confidence_interval_low']:,.0f} - €{result['confidence_interval_high']:,.0f}")
+print(f"Location: {result['locality']}, {result['province']}")
+```
+
+### Using JavaScript/Fetch
+
+```javascript
+// Predict price
+const payload = {
+  property_type: "House",
+  property_subtype: "villa",
+  postal_code: 2000,
+  area: 200,
+  rooms: 4,
+  bathrooms: 2,
+  toilets: 3,
+  primary_energy_consumption: 150,
+  state: 4,
+  build_year: 2020,
+  facades_number: 3,
+  has_garage: true,
+  has_garden: true,
+  has_terrace: true,
+  has_equipped_kitchen: true,
+  has_swimming_pool: true
+};
+
+fetch('http://localhost:8000/predict', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(payload)
+})
+  .then(response => response.json())
+  .then(data => {
+    console.log('Predicted Price:', data.predicted_price);
+    console.log('Confidence Interval:', data.confidence_interval_low, '-', data.confidence_interval_high);
+  });
+```
+
+---
+
+## 📁 Project Structure
+
+```
+immo_eliza_api/
+│
+├── app/
+│   ├── __init__.py
+│   ├── main.py                    # FastAPI application entry point
+│   │
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── config.py              # Configuration management
+│   │   └── model_loader.py        # Model loading singleton
+│   │
+│   ├── ml/
+│   │   ├── __init__.py
+│   │   ├── stage3_preprocessing.py  # Stage 3 preprocessing (exact copy)
+│   │   ├── feature_engineering.py   # Feature utilities
+│   │   └── predictor.py             # Main prediction service
+│   │
+│   ├── routers/
+│   │   ├── __init__.py
+│   │   └── predict.py             # Prediction endpoints
+│   │
+│   ├── models/                    # Trained models (copied from parent)
+│   │   ├── model_xgb_house.pkl
+│   │   ├── model_xgb_apartment.pkl
+│   │   ├── stage3_pipeline_house.pkl
+│   │   └── stage3_pipeline_apartment.pkl
+│   │
+│   └── data/                      # Lookup data
+│       └── lookup_data.csv
+│
+├── requirements.txt               # Python dependencies
+├── Dockerfile                     # Docker configuration
+├── render.yaml                    # Render deployment config
+└── README.md                      # This file
+```
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+
+You can configure the application using environment variables or a `.env` file:
+
+```env
+# API Settings
+DEBUG=false
+LOG_LEVEL=INFO
+
+# CORS
+CORS_ORIGINS=["*"]
+```
+
+---
+
+## 🧪 Testing
+
+### Manual Testing
+
+Use the interactive API documentation at `/docs` to test all endpoints.
+
+### Automated Testing
+
+Create a test file `test_api.py`:
+
+```python
+import requests
+
+BASE_URL = "http://localhost:8000"
+
+def test_health():
+    response = requests.get(f"{BASE_URL}/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+
+def test_model_info():
+    response = requests.get(f"{BASE_URL}/model-info")
+    assert response.status_code == 200
+    assert "models" in response.json()
+
+def test_predict():
+    payload = {
+        "property_type": "House",
+        "property_subtype": "villa",
+        "postal_code": 1000,
+        "area": 150,
+        "rooms": 3,
+        "bathrooms": 2,
+        "toilets": 2,
+        "primary_energy_consumption": 200,
+        "state": 2,
+        "build_year": 2000,
+        "facades_number": 2,
+        "has_garage": True,
+        "has_garden": True,
+        "has_terrace": False,
+        "has_equipped_kitchen": True,
+        "has_swimming_pool": False
+    }
+    response = requests.post(f"{BASE_URL}/predict", json=payload)
+    assert response.status_code == 200
+    assert "predicted_price" in response.json()
+
+if __name__ == "__main__":
+    test_health()
+    test_model_info()
+    test_predict()
+    print("All tests passed!")
+```
+
+Run with:
+```bash
+python test_api.py
+```
+
+---
+
+## 📊 Model Information
+
+### House Model
+- **Type**: XGBoost Regressor
+- **MAE Relative Error**: 16.7%
+- **Confidence Interval**: ±16.7%
+- **Trained on**: Belgian house data (villas, residences, mixed buildings, etc.)
+
+### Apartment Model
+- **Type**: XGBoost Regressor
+- **MAE Relative Error**: 9%
+- **Confidence Interval**: ±9%
+- **Trained on**: Belgian apartment data (flats, studios, penthouses, etc.)
+
+### Features (25 total)
+The models use 25 engineered features including:
+- Property characteristics (area, rooms, bathrooms, etc.)
+- Target-encoded categorical features
+- Geographic benchmarks (province, region, national)
+- Amenities (garage, garden, terrace, pool, kitchen)
+
+---
+
+## 🤝 Contributing
+
+This is a production deployment of the Immo-Eliza ML models. For model improvements or feature requests, please refer to the main training repository.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see parent repository for details.
 
 ---
 
 ## 👤 Author
 
 **Amine Sam**
-
 - GitHub: [@AmineSam](https://github.com/AmineSam)
-- Project: [immo-eliza-deployment-Amine](https://github.com/AmineSam/immo-eliza-deployment-Amine)
-- This project was developed as part of the AI & Data Science Bootcamp at BeCode.org 
-
----
-
-## 🙏 Acknowledgments
-
-- Belgian real estate data sources
-- Streamlit community for excellent documentation
-- XGBoost developers for the powerful ML framework
-- Open-source contributors
-
----
-
-## 📞 Support
-
-For issues, questions, or suggestions:
-- Open an issue on [GitHub](https://github.com/AmineSam/immo-eliza-deployment-Amine/issues)
-- Visit the live app at [immo-eliza.be](https://www.immo-eliza.be/)
+- Main Project: [immo-eliza-deployment-Amine](https://github.com/AmineSam/immo-eliza-deployment-Amine)
 
 ---
 
