@@ -1,219 +1,249 @@
-# Immo-Eliza — Real-Estate Price Predictor (Belgium)
+# 🏠 Immo-Eliza Real Estate Price Estimator
 
-## 1. Project Overview
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://www.immo-eliza.be/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This project implements a **robust, leakage-safe, end-to-end data pipeline** for predicting real-estate prices in Belgium.  
-The dataset is enriched with:
+**Live Demo:** [https://www.immo-eliza.be/](https://www.immo-eliza.be/)
 
-- Geographic hierarchy (municipality, arrondissement, province, region)  
-- Socio-economics (median municipal income)  
-- Address-level fields  
-- National, regional, and provincial benchmark prices per m²  
-- Local price aggregates (postal, locality)  
-- Advanced engineered ML features (missingness flags, log transforms, smoothed target encoding)
-
-The pipeline is designed to be **modular, reproducible**, allowing training of models such as Linear Regression, Random Forest, and XGBoost.
+A production-ready machine learning web application for estimating Belgian real estate prices. Built with Streamlit and powered by specialized XGBoost models trained separately for houses and apartments, this tool provides accurate price predictions with confidence intervals, location insights, and downloadable PDF reports.
 
 ---
 
-## 2. Repository Structure
+## 📋 Overview
+
+Immo-Eliza is a comprehensive property valuation tool designed specifically for the Belgian real estate market. The application leverages advanced machine learning techniques to provide accurate price estimates based on property characteristics, location data, and market benchmarks.
+
+The project features:
+- **Dual-model architecture**: Separate models optimized for houses and apartments
+- **Custom domain**: Deployed at [immo-eliza.be](https://www.immo-eliza.be/)
+- **Professional UI**: Clean, modern interface with light/dark mode support
+- **Detailed reporting**: Generate PDF reports with predictions and insights
+- **Market intelligence**: Price benchmarks and location-based analytics
+
+---
+
+## ✨ Features
+
+### 🎯 Core Functionality
+- **Specialized ML Models**: Two separate XGBoost models trained specifically for:
+  - Houses (villas, residences, mixed buildings, etc.)
+  - Apartments (studios, flats, penthouses, etc.)
+- **Accurate Predictions**: Price estimates with confidence intervals based on:
+  - Property type and subtype
+  - Location (postal code with automatic locality detection)
+  - Physical characteristics (area, rooms, bathrooms, facades)
+  - Building condition and year
+  - Amenities (garden, terrace, pool, parking)
+
+### 📊 Market Insights
+- **Price Benchmarks**: Compare estimated price per m² against:
+  - National averages
+  - Provincial averages
+  - Regional averages
+- **Location Intelligence**: Automatic metadata enrichment including:
+  - Province and region detection
+  - Local pricing trends
+
+### 📄 PDF Report Generation
+Generate professional PDF reports containing:
+- Estimated property price with confidence interval
+- All input property details
+- Model used (House or Apartment)
+- Price per m² analysis
+- Location and market context
+
+### 🎨 User Experience
+- **Light/Dark Mode Toggle**: Seamless theme switching for user preference
+- **Responsive Design**: Clean, modern interface optimized for all screen sizes
+- **Input Validation**: Real-time feedback and error handling
+- **Visual Analytics**: Interactive charts and visualizations
+
+---
+
+## 🛠️ Tech Stack
+
+### Machine Learning
+- **XGBoost**: Gradient boosting framework for regression models
+- **scikit-learn**: Data preprocessing and pipeline management
+- **NumPy & Pandas**: Data manipulation and numerical computing
+
+### Web Application
+- **Streamlit**: Interactive web application framework
+- **Altair**: Declarative statistical visualization library
+- **FPDF2**: PDF generation with Unicode support
+
+### Data Processing
+- **Joblib**: Model serialization and loading
+- **Custom Pipelines**: Multi-stage preprocessing and feature engineering
+
+### Deployment
+- **Streamlit Cloud**: Hosting platform
+- **Custom Domain**: immo-eliza.be with DNS configuration
+
+---
+
+## 📁 Project Structure
 
 ```
-immo-eliza-Amine/
+immo-eliza-deployment-Amine/
+│
+├── app/
+│   ├── streamlit_app.py          # Main Streamlit application
+│   └── fonts/
+│       └── DejaVuSans.ttf         # Unicode font for PDF generation
+│
+├── models/
+│   ├── model_xgb_house.pkl        # XGBoost model for houses
+│   ├── model_xgb_apartment.pkl    # XGBoost model for apartments
+│   ├── stage3_pipeline_house.pkl  # Preprocessing pipeline for houses
+│   └── stage3_pipeline_apartment.pkl  # Preprocessing pipeline for apartments
+│
+├── utils/
+│   ├── predictor.py               # Prediction logic
+│   ├── stage3_utils.py            # Feature engineering utilities
+│   ├── ml_utils.py                # Machine learning helpers
+│   ├── house_optimization_gpu.py  # House model training script
+│   └── apartment_optimization_gpu.py  # Apartment model training script
 │
 ├── config/
-│   ├── paths.py
-│   └── settings.py
+│   └── [Configuration files]
 │
 ├── data/
-│   ├── raw/
-│   ├── stage1/
-│   ├── stage2/
-│   ├── stage3/
-│   └── clean/
-│
-├── notebooks/
-│   └── analysis.ipynb
+│   └── [Training and reference data]
 │
 ├── pipelines/
-│   ├── stage0_load_raw.py
-│   ├── stage1_basic_cleaning.py
-│   ├── stage2_plausibility_outliers_missing.py
-│   ├── stage2_5_geo_enrichment.py
-│   ├── stage3_feature_engineering.py
-│   ├── stage3_fitted.py
-│   └── pipeline_runner.py
+│   └── [Data preprocessing pipelines]
 │
-└── utils/
-    └── ml_utils.py
+├── requirements.txt               # Python dependencies
+└── README.md                      # This file
 ```
 
 ---
 
-## 3. End-to-End Pipeline Architecture
+## 🚀 Installation & Usage
 
-The processing workflow is structured into **strict leakage-safe stages**:
+### Prerequisites
+- Python 3.9 or higher
+- pip package manager
+- Virtual environment (recommended)
 
-```
-Stage 0 → Stage 1 → Stage 2 → Stage 2.5 → Stratified Split → Stage 3 (Fit/Transform)
-```
+### Local Setup
 
----
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/AmineSam/immo-eliza-deployment-Amine.git
+   cd immo-eliza-deployment-Amine
+   ```
 
-## 4. Stage-by-Stage Documentation
+2. **Create and activate virtual environment**
+   ```bash
+   # Windows
+   python -m venv .venv
+   .venv\Scripts\activate
 
-### 4.1 Stage 0 — Load Raw Dataset
+   # macOS/Linux
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
 
-- Load CSV  
-- Remove duplicates  
-- Validate schema  
-- Enforce core dtypes  
-- Drop invalid rows  
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### 4.2 Stage 1 — URL-Based Extraction & Basic Cleaning
+4. **Run the application**
+   ```bash
+   streamlit run app/streamlit_app.py
+   ```
 
-- Extract postal code, locality, subtype  
-- Clean numeric/Yes–No fields  
-- Normalize property subtype  
-- Map to Apartment / House / Other  
+5. **Access the app**
+   - Open your browser and navigate to `http://localhost:8501`
 
-### 4.3 Stage 2 — Plausibility Checks, Encoding, Outlier Removal
+### Using the Application
 
-Stage 2 applies domain-driven cleaning rules to guarantee data consistency without introducing leakage.
-
-All plausibility thresholds (price, area, rooms, EPC, surfaces, floors, CO₂, cadastral income, etc.) were defined exclusively using domain expertise and real-estate knowledge, not statistical summaries computed from the dataset.
-This ensures the entire process remains leakage-free, since no information from validation or test distributions is used during cleaning.
-- Drop sparse/noisy columns  
-- Encode categorical & binary fields  
-- Replace missing numeric with -1  
-- Apply plausibility rules  
-- Split out outliers  
-
-### 4.4 Stage 2.5 — Geographic & Socio-Economic Enrichment
-
-Adds:
-
-- Municipality, arrondissement, province, region  
-- Median municipal income from external datasets
-- Address table  
-- Provincial, regional, national benchmark prices  
-- Engineered benchmark features  
-
-### 4.5 Stratified Split (70/15/15)
-
-- Stratify on price quantile bins  
-- Prevent distribution shift  
-- Ensures all price ranges represented  
-
-### 4.6 Stage 3 — Final Feature Engineering (Fit/Transform)
-
-- Missingness flags  
-- Convert -1 → NaN  
-- Final imputation (train-fitted)  
-- price_per_m2, log(area)  
-- Geo aggregates  
-- Target encoding (train-only)  
+1. **Select Property Type**: Choose between House or Apartment
+2. **Choose Subtype**: Select specific property category (villa, penthouse, etc.)
+3. **Enter Location**: Provide postal code (locality auto-detected)
+4. **Specify Details**:
+   - Build year and condition
+   - Living area in m²
+   - Number of bedrooms, bathrooms, toilets, facades
+5. **Add Amenities**: Check available features (garden, terrace, pool, parking)
+6. **Get Estimate**: Click "Estimate Price" to generate prediction
+7. **Download Report**: Generate and download PDF report with full details
 
 ---
 
-## 5. Machine Learning Workflow
+## 🌐 Deployment Notes
 
-### Model Modes
+### Streamlit Cloud Deployment
 
-**Linear Regression**  
-- Numeric only  
-- No TE  
-- No derived leakage features  
+The application is deployed on Streamlit Cloud with the following configuration:
 
-**Random Forest / XGBoost**  
-- Numeric + TE  
-- All engineered features  
-- Drop leak-prone features  
+- **Main file**: `app/streamlit_app.py`
+- **Python version**: 3.9+
+- **Custom domain**: immo-eliza.be (configured via DNS CNAME)
 
----
+### Domain Configuration
 
-## 6. Model Performance Summary
+1. **Domain purchased**: immo-eliza.be
+2. **DNS Setup**: CNAME record pointing to Streamlit Cloud
+3. **SSL/TLS**: Automatically managed by Cloudflare
+4. **Redirect**: [www.immo-eliza.be](https://www.immo-eliza.be/) → Streamlit app using Cloudflare
 
-**Linear Regression**  
-- R²: 0.58–0.60 
-- MAE: 86k-90k 
-- Underfits slightly  
+### Environment Considerations
 
-**Random Forest**  
-- R²: 0.75–0.78  
-- MAE ~51k–53k  
-
-**XGBoost (Best), light tuning and 5-cross validation**  
-- R²: 0.8474 ± 0.0230 
-- MAE: 45.2k ± 1405
+- Models are loaded once at startup for performance
+- Session state manages theme preferences
+- PDF generation uses bundled DejaVuSans.ttf font for Unicode support
+- No external API dependencies for core functionality
 
 ---
 
-## 7. Running the Pipeline
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+## 📊 Model Performance
 
-```python
-from pipelines.pipeline_runner import run_full_pipeline_with_split
-run_full_pipeline_with_split()
-```
+The specialized models were trained on Belgian real estate data with the following characteristics:
 
-```python
-jupyter notebook notebooks/analysis.ipynb
-```
+- **House Model**: Optimized for single-family homes, villas, and mixed buildings
+- **Apartment Model**: Optimized for apartments, studios, penthouses, and flats
+- **Training Approach**: GPU-accelerated hyperparameter tuning using Optuna
+- **Validation**: Cross-validation with confidence interval estimation
 
 ---
 
-## 8. XGBoost Tuning & Cross-Validation
+## 📄 License
 
-XGBoost was tuned using a focused grid search with **3-fold cross-validation** to balance training time and generalization.  
-Only the most impactful hyperparameters were explored (e.g., `learning_rate`, `max_depth`, `n_estimators`, `subsample`, `colsample_bytree`).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-This approach allowed the model to:
-- Reduce overfitting  
-- Stabilize performance across splits  
-- Improve MAE and R² compared to untuned XGBoost  
-
-The tuning was fully **leakage-safe**, applied only on the training split after Stage 3 feature engineering.
-
-Best Hyperparameters:
-
-- model__colsample_bytree: 0.8
-- model__learning_rate: 0.05
-- model__max_depth: 10
-- model__n_estimators: 500
-- model__subsample: 0.8
-
-![alt text](images/image.png)
-
-## 9. SHAP Feature Interpretation
-
-SHAP (Shapley Values) was used to interpret model predictions and understand which engineered features contributed most to price estimation.
-
-Key insights:
-- Area, bathrooms, geo-aggregates, and benchmark ratios were strong positive contributors.
-- Missingness flags, poor property state, and low regional ratios often pushed predictions down.
-- Geo-features from Stage 2.5 were highly influential, confirming the strength of the enrichment step.
-
-SHAP summary and bar plots provided a clear global view of feature importance without introducing any leakage.
-
-![alt text](images/image-1.png)
-
-## 10. Future Improvements
-
-- OSM distance-based features (distance to nearest facility)  
-- Nearest-neighbor comparable prices  
-- Micro-market clustering  
-- CatBoost / LightGBM  
-- Optuna tuning 
-- Specialized models for luxuary vs luxuary
-- Specialized models for apartment vs house
-- Robust tuning of the ensemble models
 ---
 
-### 9. Contributors
-- [Amine Samoudi](https://github.com/AmineSam)
+## 👤 Author
+
+**Amine Sam**
+
+- GitHub: [@AmineSam](https://github.com/AmineSam)
+- Project: [immo-eliza-deployment-Amine](https://github.com/AmineSam/immo-eliza-deployment-Amine)
+- This project was developed as part of the AI & Data Science Bootcamp at BeCode.org 
+
+---
+
+## 🙏 Acknowledgments
+
+- Belgian real estate data sources
+- Streamlit community for excellent documentation
+- XGBoost developers for the powerful ML framework
+- Open-source contributors
+
+---
+
+## 📞 Support
+
+For issues, questions, or suggestions:
+- Open an issue on [GitHub](https://github.com/AmineSam/immo-eliza-deployment-Amine/issues)
+- Visit the live app at [immo-eliza.be](https://www.immo-eliza.be/)
+
+---
+
+**Built with ❤️ for the Belgian real estate market**
